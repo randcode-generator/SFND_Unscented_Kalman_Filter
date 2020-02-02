@@ -4,6 +4,9 @@
 #include "Eigen/Dense"
 #include "measurement_package.h"
 
+using Eigen::MatrixXd;
+using Eigen::VectorXd;
+
 class UKF {
  public:
   /**
@@ -60,9 +63,6 @@ class UKF {
   // predicted sigma points matrix
   Eigen::MatrixXd Xsig_pred_;
 
-  // time when the state is true, in us
-  long long time_us_;
-
   // Process noise standard deviation longitudinal acceleration in m/s^2
   double std_a_;
 
@@ -84,17 +84,58 @@ class UKF {
   // Radar measurement noise standard deviation radius change in m/s
   double std_radrd_ ;
 
-  // Weights of sigma points
-  Eigen::VectorXd weights_;
+  void AugmentedSigmaPoints();
+  void SigmaPointPrediction(double delta_t);
+  void PredictMeanAndCovariance();
 
-  // State dimension
-  int n_x_;
+  void PredictRadarMeasurement();
+  void PredictLidarMeasurement();
 
-  // Augmented state dimension
-  int n_aug_;
+  //set measurement dimension, radar can measure r, phi, and r_dot
+  //lidar can measure x and y
+  int n_z = 3;
 
-  // Sigma point spreading parameter
-  double lambda_;
+  //set state dimension
+  int n_x = 5;
+
+  //set augmented dimension
+  int n_aug = 7;
+
+  //define spreading parameter
+  double lambda = 3 - n_aug;
+  
+  //create augmented mean vector
+  VectorXd x_aug = VectorXd(n_aug);
+
+  //create augmented state covariance
+  MatrixXd P_aug = MatrixXd(n_aug, n_aug);
+
+  //create sigma point matrix
+  MatrixXd Xsig_aug = MatrixXd(n_aug, 2 * n_aug + 1);
+
+  //create matrix with predicted sigma points as columns
+  MatrixXd Xsig_pred = MatrixXd(n_x, 2 * n_aug + 1);
+
+  //create vector for weights
+  VectorXd weights = VectorXd(2*n_aug+1);
+
+  //create matrix for sigma points in measurement space
+  MatrixXd Zsig = MatrixXd(n_z, 2 * n_aug + 1);
+
+  // Measurement noise covariance matrix
+  MatrixXd R;
+
+  //measurement covariance matrix S
+  MatrixXd S = MatrixXd(n_z,n_z);
+
+  //create matrix for cross correlation Tc
+  MatrixXd Tc = MatrixXd(n_x, n_z);
+
+  //mean predicted measurement
+  VectorXd z_pred = VectorXd(n_z);
+
+  // previous timestamp
+  long long previous_timestamp_ = 0;
 };
 
 #endif  // UKF_H
